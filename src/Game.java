@@ -185,6 +185,7 @@ public class Game extends JFrame implements Runnable, MouseListener, KeyListener
 		int randDir = rand.nextInt(4);
 		player = new Player(randX, randY, 16, menu.getName(), menu.getSkin());
 		
+		// Give player a random starting direction
 		if(randDir == 0){
 			player.setDirection("up");
 		}
