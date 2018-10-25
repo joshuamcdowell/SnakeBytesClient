@@ -291,7 +291,9 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	
 	public void joinGame(){
 		// Try to connect to server
-		connectToServer();
+		if(!serverConnected){
+			connectToServer();
+		}
 		// If connection is successful, start game
 		if(serverConnected){
 			gameState = 1;
