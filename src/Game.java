@@ -5,6 +5,9 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.BufferedReader;
@@ -14,45 +17,164 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 import org.omg.CORBA.portable.InputStream;
 
-public class Game extends JFrame implements Runnable, MouseListener, KeyListener{
+public class Game extends JFrame implements MouseListener, KeyListener{
 
 	String title = "Snake Bytes";
 	private int WIDTH = 1280;
 	private int HEIGHT = 720;
 	private int titleBarOffset = 32;
 	private Thread thread;
+	private Thread receiveUpdater;
 	
 	private int gameState; // 0 = menu, 1 = in-game, 2 = death screen
 	private Menu menu;
 	
 	private Map map;
 	private Player player;
+	private ArrayList<Enemy> enemies = new ArrayList<Enemy>();
 	
 	// Frequently used images
 	private BufferedImage menuBG;
 	
 	// Stuff for server connection
+	private boolean connecting;
 	private boolean serverConnected;
+	private boolean serverConnectError;
 	private Socket socket;
 	private OutputStream ostream;
 	private PrintWriter pwrite;
 	private BufferedReader receiveRead;
 	
 	public Game(){
-		thread = new Thread(this);
+
 		gameState = 0;
 		menu = new Menu();
 		map = new Map(80, 43, 16);
 		addMouseListener(this);
 		addKeyListener(this);
 		loadImages();
+		
+		WindowListener exitListener = new WindowAdapter() {
+		    @Override
+		    public void windowClosing(WindowEvent e) {
+		        int confirm = JOptionPane.showOptionDialog(
+		             null, "Are You Sure to Close Application?", 
+		             "Exit Confirmation", JOptionPane.YES_NO_OPTION, 
+		             JOptionPane.QUESTION_MESSAGE, null, null, null);
+		        if (confirm == 0) {
+		        	if(serverConnected){
+		        		pwrite.print("QUIT");
+			        	try{
+			        		socket.close();
+			        	}catch(Exception ex){
+			        		ex.printStackTrace();
+			        	}
+		        	}
+		        	
+		           System.exit(0);
+		        }
+		    }
+		};
+		addWindowListener(exitListener);
+		
+		thread = new Thread() {
+            public void run() {
+            	// "Heart-beat" for the game
+        		long lastTime = System.nanoTime();
+        		final double ns = 1000000000.0 / 60.0;//60 times per second
+        		double delta = 0;
+        		requestFocus();
+        		while(true) {
+        			long now = System.nanoTime();
+        			delta = delta + ((now-lastTime) / ns);
+        			lastTime = now;
+        			while (delta >= 1)//Make sure update is only happening 60 times a second
+        			{
+        				//handles all of the logic restricted time
+        				update();
+        				delta--;
+        			}
+        			render();//displays to the screen unrestricted time
+        		}
+            }
+        };
+        receiveUpdater = new Thread() {
+            public void run() {
+            	while(true){
+            		try{
+            			if(receiveRead.ready()){
+            				String received = receiveRead.readLine();
+                			if(received.contains("PMOVE:")){
+                				String pname = received.substring(received.indexOf(":") + 1, received.indexOf("*"));
+                				int skin = Integer.parseInt(received.substring(received.indexOf("*") + 1, received.indexOf("=")));
+                				int x = Integer.parseInt(received.substring(received.indexOf("=") + 1, received.indexOf(";")));
+                				int y = Integer.parseInt(received.substring(received.indexOf(";") + 1, received.indexOf(")")));
+                				
+                				int bodyLength = Integer.parseInt(received.substring(received.indexOf(")") + 1, received.indexOf("%")));
+                				ArrayList<PlayerBody> newBody = new ArrayList<PlayerBody>();
+                				if(bodyLength > 0){
+                					// Now get body
+                    				for(int i = 0; i < bodyLength; i++){
+                    					// Get start and end strings
+                    					String startString = "^";
+                    					String endString = "$";
+                    					for(int j = 0; j < i; j++){
+                    						startString += "^";
+                    						endString += "$";
+                    					}
+                    					
+                    					int bx = 0;
+                    					int by = 0;
+                    					String bodyParts = received.substring(received.indexOf("^"));
+                    					String coords = "";
+                    					// Now start parsing through string
+                    					coords = bodyParts.substring(bodyParts.indexOf(startString) + 1, bodyParts.indexOf(endString));
+                    					coords = coords.replace("^", "");
+                    					coords = coords.replace("$", "");
+                    					
+                    					bx = Integer.parseInt(coords.substring(0, coords.indexOf("#")));
+                    					by = Integer.parseInt(coords.substring(coords.indexOf("#") + 1));
+                    					
+                    					newBody.add(new PlayerBody(bx, by));
+                    				}
+                				}
+                				
+                				
+                				
+                				// If enemy is not in list of enemies, add it, else update it
+                				boolean inGame = false;
+                				int index = 0;
+                				for(int i = 0; i < enemies.size(); i++){
+                					if(enemies.get(i).getName().equals(pname)){
+                						inGame = true;
+                						index = i;
+                					}
+                				}
+                				if(inGame){
+                					enemies.get(index).update(x, y);
+                					enemies.get(index).updateBody(newBody);
+                				}
+                				else{
+                					// Add it
+                					enemies.add(new Enemy(pname, skin));
+                				}
+                			}
+                		}
+            		}catch(Exception e){
+            			e.printStackTrace();
+            		}
+            	}
+            }
+        };
 		
 		setTitle(title);
 		setSize(WIDTH, HEIGHT);
@@ -77,7 +199,42 @@ public class Game extends JFrame implements Runnable, MouseListener, KeyListener
 		}
 	}
 	
+	public void start(){
+		thread.start();
+	}
+	
+	public void stop(){
+		try{
+			thread.join();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	public void update(){
+		if(gameState == 0){
+			menu.update();
+			
+			if(serverConnectError && menu.getMessageCounter() == 399){
+				serverConnectError = false;
+			}
+		}
+		else if(gameState == 1){
+			
+			if(player != null){
+				if(serverConnected){
+					sendToServer();
+				}
+				player.update();
+				checkPlayerDeath();
+				checkPlayerSnack();
+			}
+			map.update();
+		}
+	}
+	
 	public void connectToServer(){
+		connecting = true;
 		try {
 			// Initialize server variables
 			//socket = new Socket("138.47.129.40", 1978); // Use IP address for machine hosting the server!
@@ -90,92 +247,56 @@ public class Game extends JFrame implements Runnable, MouseListener, KeyListener
 		    // receiving from server ( receiveRead  object)
 			java.io.InputStream istream = socket.getInputStream();
 			receiveRead = new BufferedReader(new InputStreamReader(istream));
+			receiveUpdater.start();
 			
-			System.out.println("Connected to server");
 			// Try sending player information to server
-			String playerInfo = "JOIN:" + menu.getName() + ":" + menu.getSkin();
-			System.out.println(playerInfo);
-			serverConnected = true;
+			String playerInfo = "JOIN:" + menu.getName() + ";" + menu.getSkin();
+			
 			pwrite.println(playerInfo);
 			pwrite.flush();
+			
+			serverConnected = true;
+			serverConnectError = false;
 		}
 		catch(Exception e){
 			e.printStackTrace();
+			serverConnected = false;
+			serverConnectError = true; // Used to display error message to user
+			menu.setMessageCounter(0);
 		}
-	}
-	
-	public void start(){
-		thread.start();
-	}
-	
-	public void stop(){
-		try{
-			thread.join();
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-	}
-
-	@Override
-	public void run() {
-		// "Heart-beat" for the game
-		long lastTime = System.nanoTime();
-		final double ns = 1000000000.0 / 60.0;//60 times per second
-		double delta = 0;
-		requestFocus();
-		while(true) {
-			long now = System.nanoTime();
-			delta = delta + ((now-lastTime) / ns);
-			lastTime = now;
-			while (delta >= 1)//Make sure update is only happening 60 times a second
-			{
-				//handles all of the logic restricted time
-				update();
-				delta--;
-			}
-			render();//displays to the screen unrestricted time
-		}
-	}
-	
-	public void update(){
-		if(gameState == 0){
-			menu.update();
-		}
-		else if(gameState == 1){
-			// Send player updates to server
-			// Receive enemy updates from server
-			sendToServer();
-			receiveFromServer();
-			player.update();
-			checkPlayerDeath();
-			checkPlayerSnack();
-						
-			map.update();
-		}
+		connecting = false;
 	}
 	
 	public void sendToServer(){
 		// Send player location info, collision with enemy, etc.
 		// Calculate ping?
-	}
-	
-	public void receiveFromServer(){
-		String received = "";
-		try {
-			if((received = receiveRead.readLine()) != null){ //receive from server
-				System.out.println(received); // displaying at DOS prompt
-				// Parse information, update enemies, leader-board status, etc.
+		if(player.hasMoved()){
+			String body = "";
+			String startString = "^";
+			String endString = "$";
+			for(int i = 0; i < player.getBody().size(); i++){
+				for(int j = 0; j < i; j++){
+					startString += "^";
+					endString += "$";
+				}
+				body += startString;
+				body += player.getBody().get(i).getX() + "#" + player.getBody().get(i).getY();
+				body += endString;
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
+			String playerInfo = "UPDATE:" + player.getName() + "=" + player.getX() + "," + player.getY() + "*" + player.getBody().size() + "%" + body;
+			pwrite.println(playerInfo);
+			pwrite.flush();
 		}
 	}
 	
 	public void joinGame(){
-		gameState = 1;
-		// try to connect to server
+		// Try to connect to server
 		connectToServer();
-		spawnPlayer();
+		// If connection is successful, start game
+		if(serverConnected){
+			gameState = 1;
+			spawnPlayer();
+		}
 	}
 	
 	public void spawnPlayer(){
@@ -268,7 +389,23 @@ public class Game extends JFrame implements Runnable, MouseListener, KeyListener
 			else{
 				g.drawString(menu.getIP(), menu.getMenuButtons().get(1).getX() + 7, menu.getMenuButtons().get(1).getY() + 35);
 			}
-			g.drawString("Play!", menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getX() + 93, menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getY() + 35);
+			if(connecting){
+				String conString = "Connecting";
+				// Used to determine number of periods after the word for a little animation
+				for(int i = 0; i < menu.getMessageCounter()/10; i++){
+					conString += ".";
+				}
+				if(menu.getMessageCounter() >= 40){
+					menu.setMessageCounter(0);
+				}
+				g.drawString(conString, menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getX() + 50, menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getY() + 35);
+			}
+			else if(serverConnectError){
+				g.drawString("Could not connect.", menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getX() + 20, menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getY() + 35);
+			}
+			else{
+				g.drawString("Play!", menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getX() + 93, menu.getMenuButtons().get(menu.getMenuButtons().size() - 1).getY() + 35);
+			}
 			
 			Font instructionFont = new Font("Monospaced", Font.BOLD, 30);
 			g.setFont(instructionFont);
@@ -291,11 +428,21 @@ public class Game extends JFrame implements Runnable, MouseListener, KeyListener
 			}
 			// Draw player
 			if(player != null){
-				g.setColor(getPlayerColor());
+				g.setColor(getPlayerColor(player.getSkin()));
 				g.fillRect(player.getX() * player.getTileSize(), player.getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
 				g.drawString(player.getName(), player.getX() * player.getTileSize() + 20, player.getY() * player.getTileSize() + titleBarOffset - 2);
 				for(int i = 0; i < player.getBody().size(); i++){
 					g.fillRect(player.getBody().get(i).getX() * player.getTileSize(), player.getBody().get(i).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
+				}
+			}
+			// Draw enemies
+			for(int i = 0; i < enemies.size(); i++){
+				g.setColor(getPlayerColor(enemies.get(i).getSkin()));
+				g.fillRect(enemies.get(i).getX() * player.getTileSize(), enemies.get(i).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
+				g.drawString(enemies.get(i).getName(), enemies.get(i).getX() * player.getTileSize() + 20, enemies.get(i).getY() * player.getTileSize() + titleBarOffset - 2);
+				for(int j = 0; j < enemies.get(i).getBody().size(); j++){
+					System.out.println("DRAWING ENEMY BODY PART:" + enemies.get(i).getBody().get(j).getX() + ":" + enemies.get(i).getBody().get(j).getY());
+					g.fillRect(enemies.get(i).getBody().get(j).getX() * player.getTileSize(), enemies.get(i).getBody().get(j).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
 				}
 			}
 			
@@ -320,38 +467,38 @@ public class Game extends JFrame implements Runnable, MouseListener, KeyListener
 		bs.show();
 	}
 	
-	public Color getPlayerColor(){
+	public Color getPlayerColor(int c){
 		Color color = Color.WHITE;
 		if(player == null){
 			return color;
 		}
 		
 		
-		if(player.getSkin() == 1){
+		if(c == 1){
 			color = Color.BLUE;
 		}
-		else if(player.getSkin() == 2){
+		else if(c == 2){
 			color = Color.GREEN;
 		}
-		else if(player.getSkin() == 3){
+		else if(c == 3){
 			color = Color.MAGENTA;
 		}
-		else if(player.getSkin() == 4){
+		else if(c == 4){
 			color = Color.CYAN;
 		}
-		else if(player.getSkin() == 5){
+		else if(c == 5){
 			color = Color.ORANGE;
 		}
-		else if(player.getSkin() == 6){
+		else if(c == 6){
 			color = Color.PINK;
 		}
-		else if(player.getSkin() == 7){
+		else if(c == 7){
 			color = Color.YELLOW;
 		}
-		else if(player.getSkin() == 8){
+		else if(c == 8){
 			color = Color.WHITE;
 		}
-		else if(player.getSkin() == 9){
+		else if(c == 9){
 			color = Color.RED;
 		}
 		
@@ -463,7 +610,10 @@ public class Game extends JFrame implements Runnable, MouseListener, KeyListener
 				gameState = 0;
 			}
 			else if(e.getKeyCode() == 10){
-				joinGame();
+				if(serverConnected){
+					gameState = 1;
+					spawnPlayer();
+				}
 			}
 		}
 	}

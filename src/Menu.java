@@ -10,6 +10,7 @@ public class Menu {
 	private int skin;
 	private boolean canPlay;
 	private ArrayList<MenuButton> buttons;
+	private int messageCounter;
 	
 	
 	public Menu(){
@@ -62,6 +63,11 @@ public class Menu {
 				skin = i - 1;
 			}
 		}
+		
+		messageCounter++;
+		if(messageCounter == 400){
+			messageCounter = 0;
+		}
 	}
 	
 	public void resetName(){
@@ -110,5 +116,13 @@ public class Menu {
 	
 	public ArrayList<MenuButton> getMenuButtons(){
 		return buttons;
+	}
+	
+	public void setMessageCounter(int mc){
+		messageCounter = mc;
+	}
+	
+	public int getMessageCounter(){
+		return messageCounter;
 	}
 }

@@ -14,6 +14,8 @@ public class Player {
 	private String name;
 	private int skin;
 	
+	private boolean moved;
+	
 	public Player(int x, int y, int tileSize, String name, int skin){
 		this.x = x;
 		this.y = y;
@@ -24,6 +26,7 @@ public class Player {
 	}
 	
 	public void update(){
+		moved = false;
 		speedCounter++;
 		if(speedCounter == 7){
 			
@@ -50,9 +53,19 @@ public class Player {
 			else if(direction.equals("right")){
 				x++;
 			}
+			moved = true;
 			speedCounter = 0;
 			
 			
+		}
+	}
+	
+	public void updateBody(int index, int newX, int newY){
+		if(index + 1 > body.size()){
+			body.add(new PlayerBody(newX, newY));
+		}
+		else{
+			body.get(index).move(newX, newY);
 		}
 	}
 	
@@ -99,5 +112,9 @@ public class Player {
 	
 	public int getSkin(){
 		return skin;
+	}
+	
+	public boolean hasMoved(){
+		return moved;
 	}
 }
