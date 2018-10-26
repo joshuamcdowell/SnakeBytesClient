@@ -123,6 +123,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                 				ArrayList<PlayerBody> newBody = new ArrayList<PlayerBody>();
                 				if(bodyLength > 0){
                 					// Now get body
+                					System.out.println("ENEMY: " + pname + "   BODYSIZE: " + bodyLength);
                     				for(int i = 0; i < bodyLength; i++){
                     					// Get start and end strings
                     					String startString = "^";
@@ -140,10 +141,9 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                     					coords = bodyParts.substring(bodyParts.indexOf(startString) + 1, bodyParts.indexOf(endString));
                     					coords = coords.replace("^", "");
                     					coords = coords.replace("$", "");
-                    					
+                    					System.out.println(bodyParts + ":" + coords);
                     					bx = Integer.parseInt(coords.substring(0, coords.indexOf("#")));
                     					by = Integer.parseInt(coords.substring(coords.indexOf("#") + 1));
-                    					
                     					newBody.add(new PlayerBody(bx, by));
                     				}
                 				}
@@ -325,7 +325,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	
 	public void checkPlayerDeath(){
 		// Check border collision
-		if(player.getX() == 0 || player.getX() == map.getWidth() || player.getY() == 0 || player.getY() == map.getHeight()){
+		if(player.getX() == 0 || player.getX() == map.getWidth() - 1 || player.getY() == 0 || player.getY() == map.getHeight() - 1){
 			player.setAlive(false);
 		}
 		
@@ -443,8 +443,14 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 				g.fillRect(enemies.get(i).getX() * player.getTileSize(), enemies.get(i).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
 				g.drawString(enemies.get(i).getName(), enemies.get(i).getX() * player.getTileSize() + 20, enemies.get(i).getY() * player.getTileSize() + titleBarOffset - 2);
 				for(int j = 0; j < enemies.get(i).getBody().size(); j++){
-					System.out.println("DRAWING ENEMY BODY PART:" + enemies.get(i).getBody().get(j).getX() + ":" + enemies.get(i).getBody().get(j).getY());
-					g.fillRect(enemies.get(i).getBody().get(j).getX() * player.getTileSize(), enemies.get(i).getBody().get(j).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
+					//System.out.println("DRAWING ENEMY BODY PART:" + enemies.get(i).getBody().get(j).getX() + ":" + enemies.get(i).getBody().get(j).getY());
+					//System.out.println("ENEMIE BODY SIZE: " + enemies.get(i).getBody().size() + ":" + j);
+					//System.out.println("ENEMY: " + enemies.get(i).getName() + "  BODYSIZE: " + enemies.get(i).getBody().size());
+					for(int z = 0; z < enemies.get(i).getBody().size(); z++){
+						//System.out.println(enemies.get(i).getName() + ":" + enemies.get(i).getBody().get(z).getX() + ":" + enemies.get(i).getBody().get(z).getY());
+					}
+					g.fillRect(enemies.get(i).getBody().get(j).getX() * player.getTileSize(), enemies.get(i).getBody().get(j).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());	
+					//g.fillRect(enemies.get(i).getX() * player.getTileSize() - j * player.getTileSize(), enemies.get(i).getBody().get(j).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());	
 				}
 			}
 			

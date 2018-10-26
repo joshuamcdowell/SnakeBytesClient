@@ -15,7 +15,7 @@ public class Map {
 		this.height = height;
 		this.tileSize = tileSize;
 		
-		maxSnackSize = 5;
+		maxSnackSize = 20;
 	}
 	
 	public void update(){

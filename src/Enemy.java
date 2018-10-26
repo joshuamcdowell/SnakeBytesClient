@@ -1,4 +1,6 @@
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class Enemy {
 
@@ -7,7 +9,7 @@ public class Enemy {
 	private int x;
 	private int y;
 	
-	private ArrayList<PlayerBody> body = new ArrayList<PlayerBody>();
+	private List<PlayerBody> body = new ArrayList<PlayerBody>();
 	
 	public Enemy(String name, int skin){
 		this.name = name;
@@ -19,11 +21,14 @@ public class Enemy {
 		this.y = y;
 	}
 	
-	public void updateBody(ArrayList<PlayerBody> newBody){
+	public void updateBody(List<PlayerBody> newBody){
 		body = new ArrayList<PlayerBody>();
-		for(int i = 0; i < newBody.size(); i++){
-			body.add(new PlayerBody(newBody.get(i).getX() - 1, newBody.get(i).getY()));
-		}
+		body = Collections.synchronizedList(body);
+		//synchronized(body){
+			for(int i = 0; i < newBody.size(); i++){
+				body.add(new PlayerBody(newBody.get(i).getX() - 1, newBody.get(i).getY()));
+			}
+		//}
 	}
 	
 	public String getName(){
@@ -42,7 +47,7 @@ public class Enemy {
 		return y;
 	}
 	
-	public ArrayList<PlayerBody> getBody(){
+	public List<PlayerBody> getBody(){
 		return body;
 	}
 }
