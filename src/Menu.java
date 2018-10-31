@@ -22,15 +22,15 @@ public class Menu {
 		buttons.add(new MenuButton(300, 300, 250, 50, Color.WHITE)); // text box for player name
 		buttons.add(new MenuButton(700, 300, 250, 50, Color.WHITE)); // text box for ip address
 		
-		buttons.add(new MenuButton(200, 450, 50, 50, Color.BLUE));
-		buttons.add(new MenuButton(300, 450, 50, 50, Color.GREEN));
-		buttons.add(new MenuButton(400, 450, 50, 50, Color.MAGENTA));
-		buttons.add(new MenuButton(500, 450, 50, 50, Color.CYAN));
-		buttons.add(new MenuButton(600, 450, 50, 50, Color.ORANGE));
-		buttons.add(new MenuButton(700, 450, 50, 50, Color.PINK));
-		buttons.add(new MenuButton(800, 450, 50, 50, Color.YELLOW));
-		buttons.add(new MenuButton(900, 450, 50, 50, Color.WHITE));
-		buttons.add(new MenuButton(1000, 450, 50, 50, Color.RED));
+		buttons.add(new MenuButton(200, 450, 50, 50, new Color(200, 200, 10)));
+		buttons.add(new MenuButton(300, 450, 50, 50, new Color(245, 240, 115)));
+		buttons.add(new MenuButton(400, 450, 50, 50, new Color(125, 245, 190)));
+		buttons.add(new MenuButton(500, 450, 50, 50, new Color(0, 165, 190)));
+		buttons.add(new MenuButton(600, 450, 50, 50, new Color(245, 15, 140)));
+		buttons.add(new MenuButton(700, 450, 50, 50, new Color(210, 135, 135)));
+		buttons.add(new MenuButton(800, 450, 50, 50, new Color(210, 205, 135)));
+		buttons.add(new MenuButton(900, 450, 50, 50, new Color(190, 155, 220)));
+		buttons.add(new MenuButton(1000, 450, 50, 50, new Color(110, 195, 250)));
 		
 		buttons.add(new MenuButton(500, 600, 250, 50, Color.RED));
 	}

@@ -44,6 +44,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	
 	// Frequently used images
 	private BufferedImage menuBG;
+	private BufferedImage gameBG;
 	
 	// Stuff for server connection
 	private boolean connecting;
@@ -62,6 +63,29 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		addMouseListener(this);
 		addKeyListener(this);
 		loadImages();
+		
+		WindowListener exitListener = new WindowAdapter() {
+		    @Override
+		    public void windowClosing(WindowEvent e) {
+		        int confirm = JOptionPane.showOptionDialog(
+		             null, "Quit playing Snake Bytes?", 
+		             "Exit Confirmation", JOptionPane.YES_NO_OPTION, 
+		             JOptionPane.QUESTION_MESSAGE, null, null, null);
+		        if (confirm == 0) {
+		        	if(serverConnected){
+		        		pwrite.print("QUIT");
+			        	try{
+			        		socket.close();
+			        	}catch(Exception ex){
+			        		ex.printStackTrace();
+			        	}
+		        	}
+		        	
+		           System.exit(0);
+		        }
+		    }
+		};
+		addWindowListener(exitListener);
 		
 		thread = new Thread() {
             public void run() {
@@ -145,11 +169,9 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                 			}
                 			else if(received.contains("DEATH:")){
                 				String deadEnemy = received.substring(received.indexOf(":") + 1);
-                				System.out.println("recieved player death message:" + deadEnemy);
                 				for(int i = 0; i < enemies.size(); i++){
                 					if(enemies.get(i).getName().equals(deadEnemy)){
                 						enemies.remove(i);
-                						System.out.println("removing enemy");
                 					}
                 				}
                 			}
@@ -177,11 +199,13 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	
 	public void loadImages(){
 		menuBG = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
+		gameBG = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		try{
 			menuBG = ImageIO.read(getClass().getResourceAsStream("res/menubg.png"));
 		}catch(Exception e){
 			e.printStackTrace();
 		}
+		generateBackground();
 	}
 	
 	public void start(){
@@ -193,6 +217,25 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			thread.join();
 		}catch(Exception e){
 			e.printStackTrace();
+		}
+	}
+	
+	public void generateBackground(){
+		int r;
+		int g;
+		int b;
+		Random rand = new Random();
+		for(int i = 0; i < gameBG.getWidth(); i += 16){
+			for(int j = 0; j < gameBG.getHeight(); j += 16){
+				r = rand.nextInt(25) + 125;
+				g = rand.nextInt(25) + 125;
+				b = rand.nextInt(25) + 125;
+				for(int x = 0; x < 16; x++){
+					for(int y = 0; y < 16; y++){
+						gameBG.setRGB(i + x, j + y, new Color(r, g, b).getRGB());
+					}
+				}
+			}
 		}
 	}
 	
@@ -368,8 +411,8 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		
 		// Draw stuff here
 		
-		g.setColor(Color.LIGHT_GRAY);
-		g.fillRect(0, 0, WIDTH, HEIGHT);
+		//g.setColor(Color.LIGHT_GRAY);
+		//g.fillRect(0, 0, WIDTH, HEIGHT);
 		
 		if(gameState == 0){
 			// Draw menu stuff
@@ -430,6 +473,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		else if(gameState == 1){
 			// Draw game stuff
 			// Draw map
+			g.drawImage(gameBG, 0, 0, WIDTH, HEIGHT, null);
 			g.setColor(Color.BLACK);
 			for(int i = 0; i < map.getWidth(); i++){
 				for(int j = 0; j < map.getHeight(); j++){
@@ -489,41 +533,11 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	}
 	
 	public Color getPlayerColor(int c){
-		Color color = Color.WHITE;
 		if(player == null){
-			return color;
+			return Color.WHITE;
 		}
 		
-		
-		if(c == 1){
-			color = Color.BLUE;
-		}
-		else if(c == 2){
-			color = Color.GREEN;
-		}
-		else if(c == 3){
-			color = Color.MAGENTA;
-		}
-		else if(c == 4){
-			color = Color.CYAN;
-		}
-		else if(c == 5){
-			color = Color.ORANGE;
-		}
-		else if(c == 6){
-			color = Color.PINK;
-		}
-		else if(c == 7){
-			color = Color.YELLOW;
-		}
-		else if(c == 8){
-			color = Color.WHITE;
-		}
-		else if(c == 9){
-			color = Color.RED;
-		}
-		
-		return color;
+		return menu.getMenuButtons().get(c + 1).getColor();
 	}
 
 	@Override
@@ -573,7 +587,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		//System.out.println(e.getKeyCode());
+		System.out.println(e.getKeyCode());
 		
 		if(gameState == 0){
 			if(menu.getMenuButtons().get(0).isSelected()){
