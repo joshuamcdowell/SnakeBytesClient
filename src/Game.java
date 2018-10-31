@@ -142,7 +142,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                     					coords = coords.replace("^", "");
                     					coords = coords.replace("$", "");
                     					System.out.println(bodyParts + ":" + coords);
-                    					bx = Integer.parseInt(coords.substring(0, coords.indexOf("#")));
+                    					bx = Integer.parseInt(coords.substring(0, coords.indexOf("#"))) + 1;
                     					by = Integer.parseInt(coords.substring(coords.indexOf("#") + 1));
                     					newBody.add(new PlayerBody(bx, by));
                     				}
