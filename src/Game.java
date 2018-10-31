@@ -63,29 +63,6 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		addKeyListener(this);
 		loadImages();
 		
-		WindowListener exitListener = new WindowAdapter() {
-		    @Override
-		    public void windowClosing(WindowEvent e) {
-		        int confirm = JOptionPane.showOptionDialog(
-		             null, "Are You Sure to Close Application?", 
-		             "Exit Confirmation", JOptionPane.YES_NO_OPTION, 
-		             JOptionPane.QUESTION_MESSAGE, null, null, null);
-		        if (confirm == 0) {
-		        	if(serverConnected){
-		        		pwrite.print("QUIT");
-			        	try{
-			        		socket.close();
-			        	}catch(Exception ex){
-			        		ex.printStackTrace();
-			        	}
-		        	}
-		        	
-		           System.exit(0);
-		        }
-		    }
-		};
-		addWindowListener(exitListener);
-		
 		thread = new Thread() {
             public void run() {
             	// "Heart-beat" for the game
@@ -123,7 +100,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                 				ArrayList<PlayerBody> newBody = new ArrayList<PlayerBody>();
                 				if(bodyLength > 0){
                 					// Now get body
-                					System.out.println("ENEMY: " + pname + "   BODYSIZE: " + bodyLength);
+                					//System.out.println("ENEMY: " + pname + "   BODYSIZE: " + bodyLength);
                     				for(int i = 0; i < bodyLength; i++){
                     					// Get start and end strings
                     					String startString = "^";
@@ -141,14 +118,12 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                     					coords = bodyParts.substring(bodyParts.indexOf(startString) + 1, bodyParts.indexOf(endString));
                     					coords = coords.replace("^", "");
                     					coords = coords.replace("$", "");
-                    					System.out.println(bodyParts + ":" + coords);
+                    					//System.out.println(bodyParts + ":" + coords);
                     					bx = Integer.parseInt(coords.substring(0, coords.indexOf("#"))) + 1;
                     					by = Integer.parseInt(coords.substring(coords.indexOf("#") + 1));
                     					newBody.add(new PlayerBody(bx, by));
                     				}
                 				}
-                				
-                				
                 				
                 				// If enemy is not in list of enemies, add it, else update it
                 				boolean inGame = false;
@@ -166,6 +141,16 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                 				else{
                 					// Add it
                 					enemies.add(new Enemy(pname, skin));
+                				}
+                			}
+                			else if(received.contains("DEATH:")){
+                				String deadEnemy = received.substring(received.indexOf(":") + 1);
+                				System.out.println("recieved player death message:" + deadEnemy);
+                				for(int i = 0; i < enemies.size(); i++){
+                					if(enemies.get(i).getName().equals(deadEnemy)){
+                						enemies.remove(i);
+                						System.out.println("removing enemy");
+                					}
                 				}
                 			}
                 		}
@@ -270,23 +255,31 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	public void sendToServer(){
 		// Send player location info, collision with enemy, etc.
 		// Calculate ping?
-		if(player.hasMoved()){
-			String body = "";
-			String startString = "^";
-			String endString = "$";
-			for(int i = 0; i < player.getBody().size(); i++){
-				for(int j = 0; j < i; j++){
-					startString += "^";
-					endString += "$";
+		if(player.isAlive()){
+			if(player.hasMoved()){
+				String body = "";
+				String startString = "^";
+				String endString = "$";
+				for(int i = 0; i < player.getBody().size(); i++){
+					for(int j = 0; j < i; j++){
+						startString += "^";
+						endString += "$";
+					}
+					body += startString;
+					body += player.getBody().get(i).getX() + "#" + player.getBody().get(i).getY();
+					body += endString;
 				}
-				body += startString;
-				body += player.getBody().get(i).getX() + "#" + player.getBody().get(i).getY();
-				body += endString;
+				String playerInfo = "UPDATE:" + player.getName() + "=" + player.getX() + "," + player.getY() + "*" + player.getBody().size() + "%" + body;
+				pwrite.println(playerInfo);
+				pwrite.flush();
 			}
-			String playerInfo = "UPDATE:" + player.getName() + "=" + player.getX() + "," + player.getY() + "*" + player.getBody().size() + "%" + body;
-			pwrite.println(playerInfo);
-			pwrite.flush();
 		}
+	}
+	
+	// Sends a message to the server so other clients know to remove player from game
+	public void sendDeathMessage(){
+		pwrite.println("DEATH:" + player.getName());
+		pwrite.flush();
 	}
 	
 	public void joinGame(){
@@ -327,6 +320,26 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		// Check border collision
 		if(player.getX() == 0 || player.getX() == map.getWidth() - 1 || player.getY() == 0 || player.getY() == map.getHeight() - 1){
 			player.setAlive(false);
+			sendDeathMessage();
+		}
+		
+		// Check collision with all enemies
+		for(int i = 0; i < enemies.size(); i++){
+			// Check collision with head piece
+			if(player.getX() == enemies.get(i).getX() && player.getY() == enemies.get(i).getY()){
+				// The smaller snake dies
+				if(player.getBody().size() <= enemies.get(i).getBody().size()){
+					player.setAlive(false);
+					sendDeathMessage();
+				}
+			}
+			// Check collision with enemy body parts
+			for(int j = 0; j < enemies.get(i).getBody().size(); j++){
+				if(player.getX() == enemies.get(i).getBody().get(j).getX() && player.getY() == enemies.get(i).getBody().get(j).getY()){
+					player.setAlive(false);
+					sendDeathMessage();
+				}
+			}
 		}
 		
 		if(!player.isAlive()){
@@ -560,7 +573,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		System.out.println(e.getKeyCode());
+		//System.out.println(e.getKeyCode());
 		
 		if(gameState == 0){
 			if(menu.getMenuButtons().get(0).isSelected()){
