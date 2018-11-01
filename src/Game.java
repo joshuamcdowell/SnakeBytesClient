@@ -42,6 +42,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	private Map map;
 	private Player player;
 	private ArrayList<Enemy> enemies = new ArrayList<Enemy>();
+	private int score; // Keeps track of player score
 	
 	// Frequently used images
 	private BufferedImage menuBG;
@@ -347,6 +348,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	
 	// Sends a message to the server so other clients know to remove player from game
 	public void sendDeathMessage(){
+		score = 0; //Resets score on death
 		pwrite.println("DEATH:" + player.getName());
 		pwrite.flush();
 	}
@@ -420,6 +422,9 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		for(int i = 0; i < map.getSnacks().size(); i++){
 			if(player.getX() == map.getSnacks().get(i).getX() && player.getY() == map.getSnacks().get(i).getY()){
 				player.eatSnack();
+				score++;
+				pwrite.println("SCORE:" + score);
+				pwrite.flush();
 				map.getSnacks().remove(i);
 			}
 		}
