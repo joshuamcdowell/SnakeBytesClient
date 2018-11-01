@@ -21,13 +21,17 @@ public class Map {
 	
 	public void update(){
 		if(snacks.size() < maxSnackSize){
-			Random rand = new Random();
-			snacks.add(new Snack(rand.nextInt(width - 4) + 2, rand.nextInt(height - 4) + 2));
+			//Random rand = new Random();
+			//snacks.add(new Snack(rand.nextInt(width - 4) + 2, rand.nextInt(height - 4) + 2));
 		}
 	}
 	
 	public ArrayList<Snack> getSnacks(){
 		return snacks;
+	}
+	
+	public void addSnack(Snack s){
+		snacks.add(s);
 	}
 	
 	public int getTileSize(){

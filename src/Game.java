@@ -18,6 +18,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import javax.imageio.ImageIO;
@@ -172,6 +173,31 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                 				for(int i = 0; i < enemies.size(); i++){
                 					if(enemies.get(i).getName().equals(deadEnemy)){
                 						enemies.remove(i);
+                					}
+                				}
+                			}
+                			else if(received.contains("SNACKS:")){
+                				// Partition each snack string
+                				String longString = received;
+                				ArrayList<String> snackStrings = new ArrayList<String>();
+                				while(longString.length() > 1){
+                					String ID = longString.substring(longString.indexOf("*") + 1, longString.indexOf("#"));
+                					longString = longString.substring(longString.indexOf("#")); // Trim
+                					int x = Integer.parseInt(longString.substring(longString.indexOf("#") + 1, longString.indexOf(":")));
+                					longString = longString.substring(longString.indexOf(":")); // Trim
+                					int y = Integer.parseInt(longString.substring(longString.indexOf(":") + 1, longString.indexOf("$")));
+                					longString = longString.substring(longString.indexOf("$")); // Trim
+                					
+                					// Check if snack is in list
+                					boolean inList = false;
+                					for(int i = 0; i < map.getSnacks().size(); i++){
+                						if(map.getSnacks().get(i).getID().equals(ID)){
+                							inList = true;
+                						}
+                					}
+                					if(!inList){
+                						// Add it to list
+                						map.addSnack(new Snack(ID, x, y));
                 					}
                 				}
                 			}
