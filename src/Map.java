@@ -9,21 +9,11 @@ public class Map {
 	private int tileSize; // Size of each tile
 	
 	private ArrayList<Snack> snacks = new ArrayList<Snack>();
-	private int maxSnackSize;
 	
 	public Map(int width, int height, int tileSize){
 		this.width = width;
 		this.height = height;
 		this.tileSize = tileSize;
-		
-		maxSnackSize = 20;
-	}
-	
-	public void update(){
-		if(snacks.size() < maxSnackSize){
-			//Random rand = new Random();
-			//snacks.add(new Snack(rand.nextInt(width - 4) + 2, rand.nextInt(height - 4) + 2));
-		}
 	}
 	
 	public ArrayList<Snack> getSnacks(){

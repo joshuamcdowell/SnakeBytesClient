@@ -180,7 +180,6 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                 			else if(received.contains("SNACKS:")){
                 				// Partition each snack string
                 				String longString = received;
-                				ArrayList<String> snackStrings = new ArrayList<String>();
                 				while(longString.length() > 1){
                 					String ID = longString.substring(longString.indexOf("*") + 1, longString.indexOf("#"));
                 					longString = longString.substring(longString.indexOf("#")); // Trim
@@ -199,6 +198,15 @@ public class Game extends JFrame implements MouseListener, KeyListener{
                 					if(!inList){
                 						// Add it to list
                 						map.addSnack(new Snack(ID, x, y));
+                					}
+                				}
+                			}
+                			else if(received.contains("SNACKREMOVE:")){
+                				System.out.println("removing snack");
+                				String snackToRemove = received.substring(received.indexOf(":") + 1);
+                				for(int i = 0; i < map.getSnacks().size(); i++){
+                					if(snackToRemove.equals(map.getSnacks().get(i).getID())){
+                						map.getSnacks().remove(i);
                 					}
                 				}
                 			}
@@ -284,7 +292,6 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 				checkPlayerDeath();
 				checkPlayerSnack();
 			}
-			map.update();
 		}
 	}
 	
@@ -424,8 +431,10 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 				player.eatSnack();
 				score++;
 				pwrite.println("SCORE:" + score);
-				pwrite.flush();
+				// Send signal to server that snack is eaten
+				pwrite.println("EATEN:" + map.getSnacks().get(i).getID());
 				map.getSnacks().remove(i);
+				pwrite.flush();
 			}
 		}
 	}
