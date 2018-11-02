@@ -43,10 +43,15 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	private Player player;
 	private ArrayList<Enemy> enemies = new ArrayList<Enemy>();
 	private int score; // Keeps track of player score
+	private String winningName;
+	private int winningLength;
+	private Color winningColor;
+	private int numPlayers;
 	
 	// Frequently used images
 	private BufferedImage menuBG;
 	private BufferedImage gameBG;
+	private BufferedImage deathBG;
 	
 	// Stuff for server connection
 	private boolean connecting;
@@ -234,9 +239,11 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	
 	public void loadImages(){
 		menuBG = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
+		deathBG = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		gameBG = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
 		try{
 			menuBG = ImageIO.read(getClass().getResourceAsStream("res/menubg.png"));
+			deathBG = ImageIO.read(getClass().getResourceAsStream("res/deathbg.png"));
 		}catch(Exception e){
 			e.printStackTrace();
 		}
@@ -281,6 +288,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			if(serverConnectError && menu.getMessageCounter() == 399){
 				serverConnectError = false;
 			}
+			setSize(WIDTH, HEIGHT);
 		}
 		else if(gameState == 1){
 			
@@ -291,8 +299,25 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 				player.update();
 				checkPlayerDeath();
 				checkPlayerSnack();
+				calcWinner();
 			}
 		}
+	}
+	
+	public void calcWinner(){
+		winningName = player.getName();
+		winningColor = getPlayerColor(player.getSkin());
+		winningLength = player.getBody().size() + 1;
+		
+		for(int i = 0; i < enemies.size(); i++){
+			if(enemies.get(i).getBody().size() > player.getBody().size()){
+				winningName = enemies.get(i).getName();
+				winningColor = getPlayerColor(enemies.get(i).getSkin());
+				winningLength = enemies.get(i).getBody().size() + 1;
+			}
+		}
+		
+		numPlayers = enemies.size() + 1;
 	}
 	
 	public void connectToServer(){
@@ -368,6 +393,8 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		// If connection is successful, start game
 		if(serverConnected){
 			gameState = 1;
+			// Make sure screen is right size
+			setSize(WIDTH, HEIGHT + 90);
 			spawnPlayer();
 		}
 	}
@@ -422,6 +449,8 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		
 		if(!player.isAlive()){
 			gameState = 2;
+			// Make sure screen is right size
+			setSize(WIDTH, HEIGHT);
 		}
 	}
 	
@@ -450,9 +479,6 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 		Graphics g = bs.getDrawGraphics();
 		
 		// Draw stuff here
-		
-		//g.setColor(Color.LIGHT_GRAY);
-		//g.fillRect(0, 0, WIDTH, HEIGHT);
 		
 		if(gameState == 0){
 			// Draw menu stuff
@@ -511,6 +537,29 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			g.drawString("Pick a color", 520, 430);
 		}
 		else if(gameState == 1){
+			
+			// Draw bottom GUI
+			g.setColor(Color.LIGHT_GRAY);
+			g.fillRect(0, 100, WIDTH, HEIGHT);
+			g.setColor(Color.BLACK);
+			Font GUIFont = new Font("Arial", Font.BOLD, 30);
+			g.setFont(GUIFont);
+			g.drawString("BOOST", 20, HEIGHT + 55);
+			g.drawString("LENGTH", 390, HEIGHT + 55);
+			g.drawString("WINNING", 580, HEIGHT + 55);
+			g.drawString("online|" + numPlayers, 1115, HEIGHT + 55);
+			
+			g.setColor(Color.RED);
+			g.fillRect(150, HEIGHT + 25, 220, 40);
+			g.setColor(Color.GREEN);
+			g.fillRect(150, HEIGHT + 25, 220 * player.getBoostCounter()/player.getMaxBoostCounter(), 40);
+			
+			g.setColor(getPlayerColor(player.getSkin()));
+			g.drawString("" + (player.getBody().size() + 1), 530, HEIGHT + 55);
+			
+			g.setColor(winningColor);
+			g.drawString(winningName + ": " + winningLength, 730, HEIGHT + 55);
+			
 			// Draw game stuff
 			// Draw map
 			g.drawImage(gameBG, 0, 0, WIDTH, HEIGHT, null);
@@ -529,6 +578,8 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			if(player != null){
 				g.setColor(getPlayerColor(player.getSkin()));
 				g.fillRect(player.getX() * player.getTileSize(), player.getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
+				Font nameFont = new Font("Arial", Font.BOLD, 20);
+				g.setFont(nameFont);
 				g.drawString(player.getName(), player.getX() * player.getTileSize() + 20, player.getY() * player.getTileSize() + titleBarOffset - 2);
 				for(int i = 0; i < player.getBody().size(); i++){
 					g.fillRect(player.getBody().get(i).getX() * player.getTileSize(), player.getBody().get(i).getY() * player.getTileSize() + titleBarOffset, player.getTileSize(), player.getTileSize());
@@ -558,14 +609,12 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			}
 		}
 		else if(gameState == 2){
-			g.setColor(Color.RED);
-			g.fillRect(0, 0, WIDTH, HEIGHT);
-			
+			g.drawImage(deathBG, 0, 30, WIDTH, HEIGHT, null);
 			Font deathFont = new Font("Monospaced", Font.BOLD, 40);
 			g.setFont(deathFont);
-			g.setColor(Color.BLACK);
+			g.setColor(Color.RED);
 			g.drawString("You have died!", 450, 400);
-			g.drawString("Press space bar to go to menu", 300, 500);
+			g.drawString("Press space bar to go to menu", 280, 500);
 			g.drawString("Press enter to respawn", 370, 600);
 		}
 		
@@ -679,14 +728,23 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			else if(e.getKeyCode() == 39){
 				player.setDirection("right");
 			}
+			else if(e.getKeyCode() == 32){
+				if(player.canBoost()){
+					player.setBoosting(true);
+				}
+			}
 		}
 		else if(gameState == 2){
 			if(e.getKeyCode() == 32){
 				gameState = 0;
+				// Make sure screen is right size
+				setSize(WIDTH, HEIGHT);
 			}
 			else if(e.getKeyCode() == 10){
 				if(serverConnected){
 					gameState = 1;
+					// Make sure screen is right size
+					setSize(WIDTH, HEIGHT + 90);
 					spawnPlayer();
 				}
 			}
@@ -694,9 +752,12 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 	}
 
 	@Override
-	public void keyReleased(KeyEvent arg0) {
-		// TODO Auto-generated method stub
-		
+	public void keyReleased(KeyEvent e) {
+		if(gameState == 1){
+			if(e.getKeyCode() == 32){
+				player.setBoosting(false);
+			}
+		}
 	}
 
 	@Override

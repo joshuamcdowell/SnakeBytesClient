@@ -16,6 +16,10 @@ public class Player {
 	
 	private boolean moved;
 	
+	private boolean boosting;
+	private int boostCounter;
+	private int maxBoostCounter;
+	
 	public Player(int x, int y, int tileSize, String name, int skin){
 		this.x = x;
 		this.y = y;
@@ -23,12 +27,23 @@ public class Player {
 		this.name = name;
 		this.skin = skin;
 		alive = true;
+		maxBoostCounter = 300;
 	}
 	
 	public void update(){
 		moved = false;
 		speedCounter++;
-		if(speedCounter == 7){
+		if(boostCounter < maxBoostCounter && !boosting){
+			boostCounter++;
+		}
+		if(boostCounter <= 0){
+			boosting = false;
+		}
+		if(boosting){
+			speedCounter += 3;
+			boostCounter -= 5;
+		}
+		if(speedCounter >= 7){
 			
 			// Move all body parts in snake like fashion
 			for(int i = body.size() - 1; i >= 0; i--){
@@ -78,6 +93,23 @@ public class Player {
 		}
 	}
 	
+	public boolean isBoosting(){
+		return boosting;
+	}
+	
+	public void setBoosting(boolean b){
+		boosting = b;
+	}
+	
+	public boolean canBoost(){
+		if(boostCounter > 0){
+			return true;
+		}
+		else{
+			return false;
+		}
+	}
+	
 	public int getX(){
 		return x;
 	}
@@ -116,5 +148,13 @@ public class Player {
 	
 	public boolean hasMoved(){
 		return moved;
+	}
+	
+	public int getBoostCounter(){
+		return boostCounter;
+	}
+	
+	public int getMaxBoostCounter(){
+		return maxBoostCounter;
 	}
 }
