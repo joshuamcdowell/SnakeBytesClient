@@ -552,10 +552,11 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			g.setColor(Color.RED);
 			g.fillRect(150, HEIGHT + 25, 220, 40);
 			g.setColor(Color.GREEN);
-			g.fillRect(150, HEIGHT + 25, 220 * player.getBoostCounter()/player.getMaxBoostCounter(), 40);
-			
-			g.setColor(getPlayerColor(player.getSkin()));
-			g.drawString("" + (player.getBody().size() + 1), 530, HEIGHT + 55);
+			if(player != null){
+				g.fillRect(150, HEIGHT + 25, 220 * player.getBoostCounter()/player.getMaxBoostCounter(), 40);
+				g.setColor(getPlayerColor(player.getSkin()));
+				g.drawString("" + (player.getBody().size() + 1), 530, HEIGHT + 55);
+			}
 			
 			g.setColor(winningColor);
 			g.drawString(winningName + ": " + winningLength, 730, HEIGHT + 55);
