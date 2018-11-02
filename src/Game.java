@@ -615,8 +615,7 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			g.setFont(deathFont);
 			g.setColor(Color.RED);
 			g.drawString("You have died!", 450, 400);
-			g.drawString("Press space bar to go to menu", 280, 500);
-			g.drawString("Press enter to respawn", 370, 600);
+			g.drawString("Press enter to respawn", 370, 550);
 		}
 		
 		bs.show();
@@ -736,12 +735,12 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			}
 		}
 		else if(gameState == 2){
-			if(e.getKeyCode() == 32){
+			/* if(e.getKeyCode() == 32){
 				gameState = 0;
 				// Make sure screen is right size
 				setSize(WIDTH, HEIGHT);
-			}
-			else if(e.getKeyCode() == 10){
+			} */
+			if(e.getKeyCode() == 10){
 				if(serverConnected){
 					gameState = 1;
 					// Make sure screen is right size
