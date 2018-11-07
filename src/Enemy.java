@@ -9,6 +9,8 @@ public class Enemy {
 	private int x;
 	private int y;
 	
+	private int offlineCounter;
+	
 	private List<PlayerBody> body = new ArrayList<PlayerBody>();
 	
 	public Enemy(String name, int skin){
@@ -19,16 +21,23 @@ public class Enemy {
 	public void update(int x, int y){
 		this.x = x;
 		this.y = y;
+		offlineCounter = 0;
 	}
 	
 	public void updateBody(List<PlayerBody> newBody){
 		body = new ArrayList<PlayerBody>();
 		body = Collections.synchronizedList(body);
-		//synchronized(body){
-			for(int i = 0; i < newBody.size(); i++){
-				body.add(new PlayerBody(newBody.get(i).getX() - 1, newBody.get(i).getY()));
-			}
-		//}
+		for(int i = 0; i < newBody.size(); i++){
+			body.add(new PlayerBody(newBody.get(i).getX() - 1, newBody.get(i).getY()));
+		}
+	}
+	
+	public int getOfflineCounter(){
+		return offlineCounter;
+	}
+	
+	public void setOfflineCounter(int olc){
+		offlineCounter = olc;
 	}
 	
 	public String getName(){

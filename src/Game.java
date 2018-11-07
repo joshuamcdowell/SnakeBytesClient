@@ -300,6 +300,14 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 				checkPlayerDeath();
 				checkPlayerSnack();
 				calcWinner();
+				
+				// Make sure enemies are still playing
+				for(int i = 0; i < enemies.size(); i++){
+					enemies.get(i).setOfflineCounter(enemies.get(i).getOfflineCounter() + 1);
+					if(enemies.get(i).getOfflineCounter() > 30){
+						enemies.remove(i);
+					}
+				}
 			}
 		}
 	}
@@ -552,11 +560,10 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			g.setColor(Color.RED);
 			g.fillRect(150, HEIGHT + 25, 220, 40);
 			g.setColor(Color.GREEN);
-			if(player != null){
-				g.fillRect(150, HEIGHT + 25, 220 * player.getBoostCounter()/player.getMaxBoostCounter(), 40);
-				g.setColor(getPlayerColor(player.getSkin()));
-				g.drawString("" + (player.getBody().size() + 1), 530, HEIGHT + 55);
-			}
+			g.fillRect(150, HEIGHT + 25, 220 * player.getBoostCounter()/player.getMaxBoostCounter(), 40);
+			
+			g.setColor(getPlayerColor(player.getSkin()));
+			g.drawString("" + (player.getBody().size() + 1), 530, HEIGHT + 55);
 			
 			g.setColor(winningColor);
 			g.drawString(winningName + ": " + winningLength, 730, HEIGHT + 55);
@@ -735,11 +742,6 @@ public class Game extends JFrame implements MouseListener, KeyListener{
 			}
 		}
 		else if(gameState == 2){
-			/* if(e.getKeyCode() == 32){
-				gameState = 0;
-				// Make sure screen is right size
-				setSize(WIDTH, HEIGHT);
-			} */
 			if(e.getKeyCode() == 10){
 				if(serverConnected){
 					gameState = 1;
